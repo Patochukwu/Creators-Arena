@@ -44,7 +44,7 @@ const startServer = async () => {
     console.log('[DB] Database synchronized successfully.');
 
     // Seed default Admin User if it does not exist
-    const adminEmail = 'admin@arena.com';
+    const adminEmail = 'creatorstutorialinsight@gmail.com';
     const adminExists = await User.findOne({ where: { email: adminEmail } });
     if (!adminExists) {
       const salt = await bcrypt.genSalt(10);
