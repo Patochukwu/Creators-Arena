@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import Home from './pages/Home';
-import AuthPages from './pages/AuthPages';
-import StudentDashboard from './pages/StudentDashboard';
-import TutorDashboard from './pages/TutorDashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
+const Home = lazy(() => import('./pages/Home'));
+const AuthPages = lazy(() => import('./pages/AuthPages'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 export const AuthContext = createContext(null);
 
@@ -104,39 +105,46 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Navbar />
           <main style={{ flex: 1, padding: '2rem 0' }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<AuthPages isRegister={false} />} />
-              <Route path="/register" element={<AuthPages isRegister={true} />} />
-              <Route path="/reset-password" element={<AuthPages isResetPassword={true} />} />
-              
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={['STUDENT']}>
-                    <StudentDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/tutor" 
-                element={
-                  <ProtectedRoute allowedRoles={['TUTOR']}>
-                    <TutorDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute allowedRoles={['ADMIN']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
+            <Suspense fallback={
+              <div className="flex-center" style={{ minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
+                <div className="timer-circle" style={{ animation: 'spin 1.5s linear infinite', borderStyle: 'solid' }}></div>
+                <p style={{ color: 'var(--text-muted)' }}>Loading section...</p>
+              </div>
+            }>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<AuthPages isRegister={false} />} />
+                <Route path="/register" element={<AuthPages isRegister={true} />} />
+                <Route path="/reset-password" element={<AuthPages isResetPassword={true} />} />
+                
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['STUDENT']}>
+                      <StudentDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/tutor" 
+                  element={
+                    <ProtectedRoute allowedRoles={['TUTOR']}>
+                      <TutorDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
         </div>

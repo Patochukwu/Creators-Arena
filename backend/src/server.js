@@ -31,7 +31,17 @@ const sequelize = new Sequelize(
     dialectOptions: isProduction ? {
       ssl: { require: true, rejectUnauthorized: false }
     } : {},
-    pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
+    pool: isProduction ? {
+      max: 2,
+      min: 0,
+      acquire: 15000,
+      idle: 5000
+    } : {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
 );
 
@@ -172,13 +182,7 @@ if (!process.env.VERCEL) {
   };
   startServer();
 } else {
-  // Vercel: sync DB tables on cold start so tables exist before requests hit
-  console.log('[Server] Vercel serverless mode — syncing DB tables...');
-  sequelize.sync({ alter: false }).then(() => {
-    console.log('[DB] Vercel DB sync complete.');
-  }).catch((err) => {
-    console.error('[DB] Vercel DB sync failed:', err.message);
-  });
+  console.log('[Server] Loaded backend as Vercel serverless function (DB sync bypassed for low latency).');
 }
 
 module.exports = app;

@@ -11,6 +11,7 @@ router.get('/fee', authenticateToken, async (req, res) => {
     if (!feeSetting) {
       feeSetting = await Setting.create({ key: 'monthly_fee', value: '50.00' });
     }
+    res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=60, stale-while-revalidate=120');
     res.json({ monthlyFee: parseFloat(feeSetting.value) });
   } catch (error) {
     console.error('Fetch fee setting error:', error);

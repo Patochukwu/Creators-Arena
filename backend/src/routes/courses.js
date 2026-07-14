@@ -11,6 +11,7 @@ router.get('/', authenticateToken, async (req, res) => {
       where: { isVisible: true },
       order: [['name', 'ASC']]
     });
+    res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=60, stale-while-revalidate=120');
     res.json(courses);
   } catch (error) {
     console.error('Fetch active courses error:', error);
