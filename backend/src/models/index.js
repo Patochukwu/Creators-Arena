@@ -1,7 +1,34 @@
-const { DataTypes } = require('sequelize');
-const db = require('../config/db');
-console.log('--- DEBUG db:', typeof db, db ? Object.keys(db) : null, 'default:', db && db.default ? Object.keys(db.default) : null);
-const sequelize = db.sequelize || db.default?.sequelize || db.default || db;
+require('dotenv').config();
+const { Sequelize, DataTypes } = require('sequelize');
+
+const isProduction = process.env.DB_HOST && 
+                     process.env.DB_HOST !== 'localhost' && 
+                     process.env.DB_HOST !== '127.0.0.1' && 
+                     process.env.DB_HOST !== 'db';
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'tutorial_arena',
+  process.env.DB_USER || 'tutorial_user',
+  process.env.DB_PASSWORD || 'tutorial_password',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: isProduction ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {},
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  }
+);
 
 // User Model
 const User = sequelize.define('User', {
