@@ -15,7 +15,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=postgres
       - DB_USER=postgres
-      - DB_PASSWORD=YOUR_SUPABASE_PASSWORD_HERE
+      - DB_PASSWORD=Patochukwu1
       - JWT_SECRET=super_secret_jwt_key_123!
       - RESEND_API_KEY=re_RUmwx1Uq_Fj8skSyvA7pnMPvEqtsWyD6U
       - MAIL_FROM=Creators Tutorial Arena <onboarding@resend.dev>
