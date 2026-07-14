@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const db = require('../config/db');
+console.log('--- DEBUG db:', typeof db, db ? Object.keys(db) : null, 'default:', db && db.default ? Object.keys(db.default) : null);
 const sequelize = db.sequelize || db.default?.sequelize || db.default || db;
 
 // User Model
