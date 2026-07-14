@@ -108,13 +108,19 @@ const startServer = async () => {
     }
 
     // Start listening
-    app.listen(PORT, () => {
-      console.log(`[Server] Server is running on port ${PORT}`);
-    });
+    if (!process.env.VERCEL) {
+      app.listen(PORT, () => {
+        console.log(`[Server] Server is running on port ${PORT}`);
+      });
+    } else {
+      console.log('[Server] Serverless initialization complete.');
+    }
 
   } catch (error) {
     console.error('[DB] Database sync failed or server startup aborted:', error);
-    process.exit(1);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
   }
 };
 

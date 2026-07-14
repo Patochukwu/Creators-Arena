@@ -1,5 +1,10 @@
 const { Sequelize } = require('sequelize');
 
+const isProduction = process.env.DB_HOST && 
+                     process.env.DB_HOST !== 'localhost' && 
+                     process.env.DB_HOST !== '127.0.0.1' && 
+                     process.env.DB_HOST !== 'db';
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'tutorial_arena',
   process.env.DB_USER || 'tutorial_user',
@@ -9,6 +14,12 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     logging: false,
+    dialectOptions: isProduction ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {},
     pool: {
       max: 5,
       min: 0,
