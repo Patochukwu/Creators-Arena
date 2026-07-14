@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const modelsModule = require('../models');
+console.log('--- DEBUG auth modelsModule:', typeof modelsModule, modelsModule ? Object.keys(modelsModule) : null, 'default:', modelsModule && modelsModule.default ? Object.keys(modelsModule.default) : null);
 const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
 const { User } = models;
 const { JWT_SECRET, authenticateToken } = require('../middleware/auth');
