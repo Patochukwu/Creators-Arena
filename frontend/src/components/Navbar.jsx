@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { BookOpen, LogOut, LayoutDashboard, UserCheck, ShieldAlert } from 'lucide-react';
+import { BookOpen, LogOut, LayoutDashboard, UserCheck, ShieldAlert, Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, theme, toggleTheme } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,6 +31,26 @@ export default function Navbar() {
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
             Home
           </Link>
+
+          <button 
+            onClick={toggleTheme} 
+            className="btn-theme-toggle"
+            style={{ 
+              padding: '0.5rem', 
+              borderRadius: '50%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '1px solid var(--glass-border)',
+              background: 'transparent',
+              color: 'var(--text-bright)',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, transform 0.2s'
+            }}
+            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          >
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
           
           {user ? (
             <>

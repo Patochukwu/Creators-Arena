@@ -37,6 +37,32 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-theme='dark'] {
+  /* Color Palette - Premium Dark Theme */
+  --bg-primary: #090f1c; /* Deep Space Dark */
+  --bg-secondary: #111a2e; /* Dark Blue-Gray */
+  --color-primary: #14b8a6; /* Vibrant Teal */
+  --color-primary-hover: #0d9488;
+  --color-secondary: #2dd4bf; /* Mint/Aqua Accent */
+  --color-accent: #38bdf8; /* Soft Sky Blue */
+  --color-success: #10b981;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  
+  /* Text colors for dark mode */
+  --text-main: #94a3b8; /* Cool Gray */
+  --text-muted: #64748b; /* Medium Gray */
+  --text-bright: #f8fafc; /* Near White */
+
+  /* Glassmorphism / Cards styling for dark mode */
+  --glass-bg: rgba(17, 26, 46, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+  --glass-shadow: rgba(0, 0, 0, 0.2);
+
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -238,11 +264,11 @@ a:hover {
 .btn-secondary {
   background: var(--bg-secondary);
   color: var(--text-main);
-  border: 1px solid rgba(15, 23, 42, 0.15);
+  border: 1px solid var(--glass-border);
 }
 
 .btn-secondary:hover {
-  background: #f1f5f9;
+  background: var(--glass-border);
   color: var(--text-bright);
 }
 
