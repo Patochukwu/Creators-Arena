@@ -32,15 +32,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
-// Database sync and server initialization
-const startServer = async () => {
-  try {
-    // Authenticate database connection
-    await sequelize.authenticate();
-    console.log('[DB] Connection to PostgreSQL established successfully.');
+// Database sync and server initialization (only run locally - Vercel resolves connections lazily)
+if (!process.env.VERCEL) {
+  const startServer = async () => {
+    try {
+      // Authenticate database connection
+      await sequelize.authenticate();
+      console.log('[DB] Connection to PostgreSQL established successfully.');
 
-    // Sync and seed only if NOT running in serverless Vercel environment
-    if (!process.env.VERCEL) {
       // Sync models (creates tables if they don't exist)
       await sequelize.sync({ alter: true });
       console.log('[DB] Database synchronized successfully.');
@@ -108,27 +107,21 @@ const startServer = async () => {
           console.log(`[Seed] Course initialized: ${c.name} (Price: $${c.price})`);
         }
       }
-    } else {
-      console.log('[DB] Running on serverless platform - bypassing migrations and seeders.');
-    }
 
-    // Start listening
-    if (!process.env.VERCEL) {
+      // Start listening
       app.listen(PORT, () => {
         console.log(`[Server] Server is running on port ${PORT}`);
       });
-    } else {
-      console.log('[Server] Serverless initialization complete.');
-    }
 
-  } catch (error) {
-    console.error('[DB] Database sync failed or server startup aborted:', error);
-    if (!process.env.VERCEL) {
+    } catch (error) {
+      console.error('[DB] Database sync failed or server startup aborted:', error);
       process.exit(1);
     }
-  }
-};
+  };
 
-startServer();
+  startServer();
+} else {
+  console.log('[Server] Loaded backend as Vercel serverless function (bypassing startup sync and port listener).');
+}
 
 module.exports = app;
