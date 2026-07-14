@@ -26,7 +26,7 @@ export default function AuthPages({ isRegister: initialIsRegister, isResetPasswo
     setSuccessMsg('');
     setLoading(true);
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+    const apiUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5005/api' : '/api');
 
     // 1. Password reset flow
     if (isResetPassword) {

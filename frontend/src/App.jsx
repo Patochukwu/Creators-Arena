@@ -36,7 +36,8 @@ function App() {
         return;
       }
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5005/api'}/auth/me`, {
+        const apiUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5005/api' : '/api');
+        const response = await fetch(`${apiUrl}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
