@@ -4,6 +4,9 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const dns = require('dns');
 const { Sequelize, DataTypes } = require('sequelize');
+// Explicitly require pg so Vercel's bundler (ncc/nft) includes it in the bundle.
+// Sequelize loads pg dynamically which bundlers cannot trace — dialectModule fixes this.
+const pg = require('pg');
 
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
@@ -23,6 +26,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     dialect: 'postgres',
+    dialectModule: pg,  // Force bundler to include pg statically
     logging: false,
     dialectOptions: isProduction ? {
       ssl: { require: true, rejectUnauthorized: false }
