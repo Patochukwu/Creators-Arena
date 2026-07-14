@@ -28,10 +28,6 @@ export default function Navbar() {
           <span>Creators Arena</span>
         </Link>
         <nav className="nav-links">
-          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-            Home
-          </Link>
-
           <button 
             onClick={toggleTheme} 
             className="btn-theme-toggle"
@@ -51,6 +47,10 @@ export default function Navbar() {
           >
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
+
+          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+            Home
+          </Link>
           
           {user ? (
             <>
