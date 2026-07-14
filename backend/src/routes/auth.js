@@ -1,10 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const modelsModule = require('../models');
-console.log('--- DEBUG auth modelsModule:', typeof modelsModule, modelsModule ? Object.keys(modelsModule) : null, 'default:', modelsModule && modelsModule.default ? Object.keys(modelsModule.default) : null);
-const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-const { User } = models;
 const { JWT_SECRET, authenticateToken } = require('../middleware/auth');
 const { sendEmail } = require('../utils/mailer');
 
@@ -13,27 +9,24 @@ const router = express.Router();
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
+    const { User } = req.app.locals.db;
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-
     if (!['STUDENT', 'TUTOR', 'ADMIN'].includes(role.toUpperCase())) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
     const newUser = await User.create({
       name,
       email,
@@ -41,7 +34,6 @@ router.post('/register', async (req, res) => {
       role: role.toUpperCase()
     });
 
-    // Send successful registration email
     const emailSubject = 'Welcome to Creators Tutorial Arena!';
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -57,22 +49,12 @@ router.post('/register', async (req, res) => {
         </p>
       </div>
     `;
-    
-    // Await email dispatch so Vercel does not terminate before completion
-    await sendEmail({
-      to: email,
-      subject: emailSubject,
-      html: emailHtml
-    });
+
+    await sendEmail({ to: email, subject: emailSubject, html: emailHtml });
 
     res.status(201).json({
       message: 'Registration successful',
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role
-      }
+      user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role }
     });
 
   } catch (error) {
@@ -84,6 +66,7 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
+    const { User } = req.app.locals.db;
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -100,7 +83,6 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate Token
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email, role: user.role },
       JWT_SECRET,
@@ -109,12 +91,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
 
   } catch (error) {
@@ -126,6 +103,7 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req, res) => {
   try {
+    const { User } = req.app.locals.db;
     const user = await User.findByPk(req.user.id, {
       attributes: ['id', 'name', 'email', 'role']
     });
@@ -139,9 +117,10 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/auth/forgot-password - User requests password reset link
+// POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
   try {
+    const { User } = req.app.locals.db;
     const { email } = req.body;
 
     if (!email) {
@@ -150,11 +129,9 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      // Return 200 to prevent user enumeration, but state the message
       return res.json({ message: 'If that email address exists in our database, we have sent a reset link to it.' });
     }
 
-    // Generate token valid for 15 minutes
     const token = jwt.sign(
       { id: user.id, email: user.email },
       JWT_SECRET,
@@ -163,13 +140,12 @@ router.post('/forgot-password', async (req, res) => {
 
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5175'}/reset-password?token=${token}`;
 
-    // Send reset email
     const emailSubject = 'Password Reset Request - Creators Tutorial Arena';
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #4f46e5; text-align: center;">Reset Your Password</h2>
         <p>Dear ${user.name},</p>
-        <p>We received a request to reset your password for your Creators Tutorial Arena account. Please click the button below to set a new password:</p>
+        <p>We received a request to reset your password. Please click the button below to set a new password:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${resetLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
         </div>
@@ -179,12 +155,7 @@ router.post('/forgot-password', async (req, res) => {
       </div>
     `;
 
-    // Await email dispatch so Vercel does not terminate before completion
-    await sendEmail({
-      to: email,
-      subject: emailSubject,
-      html: emailHtml
-    });
+    await sendEmail({ to: email, subject: emailSubject, html: emailHtml });
 
     res.json({ message: 'If that email address exists in our database, we have sent a reset link to it.' });
 
@@ -194,16 +165,16 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// POST /api/auth/reset-password - User submits new password using token
+// POST /api/auth/reset-password
 router.post('/reset-password', async (req, res) => {
   try {
+    const { User } = req.app.locals.db;
     const { token, newPassword } = req.body;
 
     if (!token || !newPassword) {
       return res.status(400).json({ message: 'Token and new password are required' });
     }
 
-    // Verify token
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
@@ -216,11 +187,8 @@ router.post('/reset-password', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
     res.json({ message: 'Password has been reset successfully. You can now login.' });

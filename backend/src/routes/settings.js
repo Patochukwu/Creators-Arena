@@ -3,18 +3,12 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-const getModels = () => {
-  const modelsModule = require('../models');
-  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-};
-
 // GET /api/settings/fee - Retrieve current subscription rate
 router.get('/fee', authenticateToken, async (req, res) => {
   try {
-    const { Setting } = getModels();
+    const { Setting } = req.app.locals.db;
     let feeSetting = await Setting.findOne({ where: { key: 'monthly_fee' } });
     if (!feeSetting) {
-      // Seed default rate
       feeSetting = await Setting.create({ key: 'monthly_fee', value: '50.00' });
     }
     res.json({ monthlyFee: parseFloat(feeSetting.value) });
@@ -27,7 +21,7 @@ router.get('/fee', authenticateToken, async (req, res) => {
 // POST /api/settings/fee - Update subscription rate (Admin only)
 router.post('/fee', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Setting } = getModels();
+    const { Setting } = req.app.locals.db;
     const { monthlyFee } = req.body;
 
     if (monthlyFee === undefined || isNaN(monthlyFee) || parseFloat(monthlyFee) < 0) {
@@ -52,36 +46,24 @@ router.post('/fee', authenticateToken, requireRole(['ADMIN']), async (req, res) 
 // GET /api/settings/stats - Retrieve Admin dashboard analytics
 router.get('/stats', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Payment, User, AttendanceRecord, sequelize } = getModels();
-    const currentMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+    const { Payment, User, AttendanceRecord, sequelize } = req.app.locals.db;
+    const currentMonth = new Date().toISOString().substring(0, 7);
 
-    // 1. Total revenue (sum of APPROVED payments)
     const totalRevenueResult = await Payment.findAll({
       where: { status: 'APPROVED' },
       attributes: [[sequelize.fn('SUM', sequelize.col('amount')), 'total']]
     });
     const totalRevenue = parseFloat(totalRevenueResult[0]?.dataValues?.total || 0);
 
-    // 2. Active students for the current month
     const activeStudentsCount = await Payment.count({
-      where: {
-        sessionMonth: currentMonth,
-        status: 'APPROVED'
-      },
+      where: { sessionMonth: currentMonth, status: 'APPROVED' },
       distinct: true,
       col: 'studentId'
     });
 
-    // 3. Pending approvals count
-    const pendingApprovalsCount = await Payment.count({
-      where: { status: 'PENDING' }
-    });
-
-    // 4. Overall user counts
+    const pendingApprovalsCount = await Payment.count({ where: { status: 'PENDING' } });
     const totalStudents = await User.count({ where: { role: 'STUDENT' } });
     const totalTutors = await User.count({ where: { role: 'TUTOR' } });
-
-    // 5. Total check-ins logged
     const totalRecords = await AttendanceRecord.count();
 
     res.json({
@@ -103,7 +85,7 @@ router.get('/stats', authenticateToken, requireRole(['ADMIN']), async (req, res)
 // GET /api/settings/courses - Fetch active status for all courses
 router.get('/courses', authenticateToken, async (req, res) => {
   try {
-    const { Setting } = getModels();
+    const { Setting } = req.app.locals.db;
     const videoEditing = await Setting.findOne({ where: { key: 'course_video_editing_enabled' } });
     const basicFrontend = await Setting.findOne({ where: { key: 'course_basic_frontend_enabled' } });
     const cloudComputing = await Setting.findOne({ where: { key: 'course_cloud_computing_enabled' } });
@@ -122,7 +104,7 @@ router.get('/courses', authenticateToken, async (req, res) => {
 // POST /api/settings/courses - Update active status for courses (Admin only)
 router.post('/courses', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Setting } = getModels();
+    const { Setting } = req.app.locals.db;
     const { video_editing, basic_frontend, cloud_computing } = req.body;
 
     const updates = [

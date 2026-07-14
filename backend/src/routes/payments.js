@@ -4,15 +4,10 @@ const { sendEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
-const getModels = () => {
-  const modelsModule = require('../models');
-  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-};
-
 // POST /api/payments/pay - Student submits payment simulation
 router.post('/pay', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
-    const { Payment, Course } = getModels();
+    const { Payment, Course } = req.app.locals.db;
     const { sessionMonth, transactionReference, courseName } = req.body;
 
     if (!sessionMonth) {
@@ -22,20 +17,14 @@ router.post('/pay', authenticateToken, requireRole(['STUDENT']), async (req, res
       return res.status(400).json({ message: 'Course selection is required' });
     }
 
-    // Get current course price from Course model
     const course = await Course.findOne({ where: { name: courseName } });
     if (!course) {
       return res.status(404).json({ message: `Selected course "${courseName}" not found.` });
     }
     const amount = course.price;
 
-    // Check if there is already a PENDING or APPROVED payment for this month and course by the student
     const existingPayment = await Payment.findOne({
-      where: {
-        studentId: req.user.id,
-        sessionMonth,
-        courseName,
-      }
+      where: { studentId: req.user.id, sessionMonth, courseName }
     });
 
     if (existingPayment) {
@@ -70,7 +59,7 @@ router.post('/pay', authenticateToken, requireRole(['STUDENT']), async (req, res
 // GET /api/payments/my-payments - Student fetches their transaction logs
 router.get('/my-payments', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
-    const { Payment } = getModels();
+    const { Payment } = req.app.locals.db;
     const payments = await Payment.findAll({
       where: { studentId: req.user.id },
       order: [['createdAt', 'DESC']]
@@ -85,7 +74,7 @@ router.get('/my-payments', authenticateToken, requireRole(['STUDENT']), async (r
 // GET /api/payments/all - Admin fetches all payments
 router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Payment, User } = getModels();
+    const { Payment, User } = req.app.locals.db;
     const payments = await Payment.findAll({
       include: [{ model: User, as: 'student', attributes: ['name', 'email'] }],
       order: [['createdAt', 'DESC']]
@@ -100,7 +89,7 @@ router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) =
 // POST /api/payments/approve/:id - Admin approves a payment
 router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Payment, User } = getModels();
+    const { Payment, User } = req.app.locals.db;
     const { id } = req.params;
     const payment = await Payment.findByPk(id, {
       include: [{ model: User, as: 'student', attributes: ['name', 'email'] }]
@@ -109,7 +98,6 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
     }
-
     if (payment.status !== 'PENDING') {
       return res.status(400).json({ message: `Payment is already ${payment.status.toLowerCase()}` });
     }
@@ -118,14 +106,13 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
     payment.approvedAt = new Date();
     await payment.save();
 
-    // Trigger confirmation email
     const emailSubject = 'Payment Confirmation - Creators Tutorial Arena';
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #10b981; text-align: center;">Payment Approved!</h2>
         <p>Dear ${payment.student.name},</p>
-        <p>We are pleased to inform you that your payment of <strong>$${payment.amount}</strong> for the <strong>${payment.courseName}</strong> course during the <strong>${payment.sessionMonth}</strong> session has been verified and approved.</p>
-        <p>You now have full access to the tutorial sessions and dashboard resources for this course.</p>
+        <p>Your payment of <strong>$${payment.amount}</strong> for the <strong>${payment.courseName}</strong> course during <strong>${payment.sessionMonth}</strong> has been approved.</p>
+        <p>You now have full access to tutorial sessions and dashboard resources for this course.</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL || 'http://localhost:5175'}/dashboard" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
         </div>
@@ -135,13 +122,7 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
       </div>
     `;
 
-    // Await email dispatch so Vercel does not terminate before completion
-    await sendEmail({
-      to: payment.student.email,
-      subject: emailSubject,
-      html: emailHtml
-    });
-
+    await sendEmail({ to: payment.student.email, subject: emailSubject, html: emailHtml });
     res.json({ message: 'Payment approved successfully', payment });
 
   } catch (error) {
@@ -153,21 +134,19 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
 // POST /api/payments/reject/:id - Admin rejects a payment
 router.post('/reject/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { Payment } = getModels();
+    const { Payment } = req.app.locals.db;
     const { id } = req.params;
     const payment = await Payment.findByPk(id);
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
     }
-
     if (payment.status !== 'PENDING') {
       return res.status(400).json({ message: `Payment is already ${payment.status.toLowerCase()}` });
     }
 
     payment.status = 'REJECTED';
     await payment.save();
-
     res.json({ message: 'Payment rejected successfully', payment });
 
   } catch (error) {

@@ -4,15 +4,10 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-const getModels = () => {
-  const modelsModule = require('../models');
-  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-};
-
 // POST /api/attendance/session - Tutor or Admin starts a session with a countdown timer
 router.post('/session', authenticateToken, requireRole(['TUTOR', 'ADMIN']), async (req, res) => {
   try {
-    const { AttendanceSession } = getModels();
+    const { AttendanceSession } = req.app.locals.db;
     const { durationMinutes, courseName } = req.body;
 
     if (!durationMinutes || isNaN(durationMinutes) || durationMinutes <= 0) {
@@ -22,14 +17,10 @@ router.post('/session', authenticateToken, requireRole(['TUTOR', 'ADMIN']), asyn
       return res.status(400).json({ message: 'Course selection is required to launch attendance' });
     }
 
-    // Set expiration time
     const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
 
-    // End any active sessions just in case
     await AttendanceSession.destroy({
-      where: {
-        expiresAt: { [Op.gt]: new Date() }
-      }
+      where: { expiresAt: { [Op.gt]: new Date() } }
     });
 
     const session = await AttendanceSession.create({
@@ -53,12 +44,11 @@ router.post('/session', authenticateToken, requireRole(['TUTOR', 'ADMIN']), asyn
 // GET /api/attendance/active - Retrieve current active attendance session
 router.get('/active', authenticateToken, async (req, res) => {
   try {
-    const { AttendanceSession, AttendanceRecord, User, Payment } = getModels();
+    const { AttendanceSession, AttendanceRecord, User, Payment } = req.app.locals.db;
     const now = new Date();
+
     const session = await AttendanceSession.findOne({
-      where: {
-        expiresAt: { [Op.gt]: now }
-      },
+      where: { expiresAt: { [Op.gt]: now } },
       include: [{ model: User, as: 'tutor', attributes: ['name'] }],
       order: [['createdAt', 'DESC']]
     });
@@ -67,12 +57,10 @@ router.get('/active', authenticateToken, async (req, res) => {
       return res.json({ active: false });
     }
 
-    // Check if the current user (if student) has marked attendance for this session
     let hasMarked = false;
     if (req.user.role === 'STUDENT') {
-      const currentMonth = now.toISOString().substring(0, 7); // e.g. "2026-07"
-      
-      // Verify student has paid and is APPROVED for this specific course
+      const currentMonth = now.toISOString().substring(0, 7);
+
       const activePayment = await Payment.findOne({
         where: {
           studentId: req.user.id,
@@ -83,15 +71,11 @@ router.get('/active', authenticateToken, async (req, res) => {
       });
 
       if (!activePayment) {
-        // Return active: false so the panel is hidden from non-subscribers
         return res.json({ active: false });
       }
 
       const record = await AttendanceRecord.findOne({
-        where: {
-          sessionId: session.id,
-          studentId: req.user.id
-        }
+        where: { sessionId: session.id, studentId: req.user.id }
       });
       hasMarked = !!record;
     }
@@ -112,21 +96,19 @@ router.get('/active', authenticateToken, async (req, res) => {
 // POST /api/attendance/mark - Student marks their attendance
 router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
-    const { AttendanceSession, AttendanceRecord, Payment } = getModels();
+    const { AttendanceSession, AttendanceRecord, Payment } = req.app.locals.db;
     const { sessionId } = req.body;
 
     if (!sessionId) {
       return res.status(400).json({ message: 'Session ID is required' });
     }
 
-    // 1. Verify active session exists and is not expired
     const session = await AttendanceSession.findByPk(sessionId);
     if (!session || new Date(session.expiresAt) < new Date()) {
       return res.status(400).json({ message: 'Attendance window has closed' });
     }
 
-    // 2. Validate current month payment status (Must be APPROVED for this specific course)
-    const currentMonth = new Date().toISOString().substring(0, 7); // e.g. "2026-07"
+    const currentMonth = new Date().toISOString().substring(0, 7);
     const activePayment = await Payment.findOne({
       where: {
         studentId: req.user.id,
@@ -142,12 +124,8 @@ router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, re
       });
     }
 
-    // 3. Prevent duplicate check-in
     const existingRecord = await AttendanceRecord.findOne({
-      where: {
-        sessionId,
-        studentId: req.user.id
-      }
+      where: { sessionId, studentId: req.user.id }
     });
 
     if (existingRecord) {
@@ -159,10 +137,7 @@ router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, re
       sessionId
     });
 
-    res.status(201).json({
-      message: 'Attendance marked successfully',
-      record
-    });
+    res.status(201).json({ message: 'Attendance marked successfully', record });
 
   } catch (error) {
     console.error('Mark attendance error:', error);
@@ -173,7 +148,8 @@ router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, re
 // GET /api/attendance/history - Fetch student check-ins or live list for Tutors
 router.get('/history', authenticateToken, async (req, res) => {
   try {
-    const { AttendanceRecord, AttendanceSession, User } = getModels();
+    const { AttendanceRecord, AttendanceSession, User } = req.app.locals.db;
+
     if (req.user.role === 'STUDENT') {
       const records = await AttendanceRecord.findAll({
         where: { studentId: req.user.id },
@@ -187,7 +163,6 @@ router.get('/history', authenticateToken, async (req, res) => {
       return res.json(records);
     }
 
-    // For Admin / Tutor, fetch all records
     const records = await AttendanceRecord.findAll({
       include: [
         { model: User, as: 'student', attributes: ['name', 'email'] },
