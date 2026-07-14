@@ -1,14 +1,17 @@
 const express = require('express');
-const modelsModule = require('../models');
-const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-const { Course } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+const getModels = () => {
+  const modelsModule = require('../models');
+  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+};
+
 // GET /api/courses - Retrieve active visible courses for Student enrollment
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const { Course } = getModels();
     const courses = await Course.findAll({
       where: { isVisible: true },
       order: [['name', 'ASC']]
@@ -23,6 +26,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET /api/courses/all - Retrieve all courses for Admin management
 router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Course } = getModels();
     const courses = await Course.findAll({
       order: [['name', 'ASC']]
     });
@@ -36,6 +40,7 @@ router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) =
 // POST /api/courses - Create a new course (Admin only)
 router.post('/', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Course } = getModels();
     const { name, description, price, isVisible } = req.body;
 
     if (!name || price === undefined || isNaN(price) || parseFloat(price) < 0) {
@@ -66,6 +71,7 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req, res) => 
 // PUT /api/courses/:id - Edit an existing course (Admin only)
 router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Course } = getModels();
     const { id } = req.params;
     const { name, description, price, isVisible } = req.body;
 
@@ -110,6 +116,7 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) =
 // DELETE /api/courses/:id - Delete a course (Admin only)
 router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Course } = getModels();
     const { id } = req.params;
     const course = await Course.findByPk(id);
     if (!course) {

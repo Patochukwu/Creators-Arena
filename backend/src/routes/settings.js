@@ -1,14 +1,17 @@
 const express = require('express');
-const modelsModule = require('../models');
-const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-const { Setting, Payment, User, AttendanceRecord, AttendanceSession, sequelize } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+const getModels = () => {
+  const modelsModule = require('../models');
+  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+};
+
 // GET /api/settings/fee - Retrieve current subscription rate
 router.get('/fee', authenticateToken, async (req, res) => {
   try {
+    const { Setting } = getModels();
     let feeSetting = await Setting.findOne({ where: { key: 'monthly_fee' } });
     if (!feeSetting) {
       // Seed default rate
@@ -24,6 +27,7 @@ router.get('/fee', authenticateToken, async (req, res) => {
 // POST /api/settings/fee - Update subscription rate (Admin only)
 router.post('/fee', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Setting } = getModels();
     const { monthlyFee } = req.body;
 
     if (monthlyFee === undefined || isNaN(monthlyFee) || parseFloat(monthlyFee) < 0) {
@@ -48,6 +52,7 @@ router.post('/fee', authenticateToken, requireRole(['ADMIN']), async (req, res) 
 // GET /api/settings/stats - Retrieve Admin dashboard analytics
 router.get('/stats', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Payment, User, AttendanceRecord, sequelize } = getModels();
     const currentMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
 
     // 1. Total revenue (sum of APPROVED payments)
@@ -98,6 +103,7 @@ router.get('/stats', authenticateToken, requireRole(['ADMIN']), async (req, res)
 // GET /api/settings/courses - Fetch active status for all courses
 router.get('/courses', authenticateToken, async (req, res) => {
   try {
+    const { Setting } = getModels();
     const videoEditing = await Setting.findOne({ where: { key: 'course_video_editing_enabled' } });
     const basicFrontend = await Setting.findOne({ where: { key: 'course_basic_frontend_enabled' } });
     const cloudComputing = await Setting.findOne({ where: { key: 'course_cloud_computing_enabled' } });
@@ -116,6 +122,7 @@ router.get('/courses', authenticateToken, async (req, res) => {
 // POST /api/settings/courses - Update active status for courses (Admin only)
 router.post('/courses', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Setting } = getModels();
     const { video_editing, basic_frontend, cloud_computing } = req.body;
 
     const updates = [

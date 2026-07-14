@@ -1,15 +1,18 @@
 const express = require('express');
-const modelsModule = require('../models');
-const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-const { Payment, User, Setting, Course } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { sendEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
+const getModels = () => {
+  const modelsModule = require('../models');
+  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+};
+
 // POST /api/payments/pay - Student submits payment simulation
 router.post('/pay', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
+    const { Payment, Course } = getModels();
     const { sessionMonth, transactionReference, courseName } = req.body;
 
     if (!sessionMonth) {
@@ -67,6 +70,7 @@ router.post('/pay', authenticateToken, requireRole(['STUDENT']), async (req, res
 // GET /api/payments/my-payments - Student fetches their transaction logs
 router.get('/my-payments', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
+    const { Payment } = getModels();
     const payments = await Payment.findAll({
       where: { studentId: req.user.id },
       order: [['createdAt', 'DESC']]
@@ -81,6 +85,7 @@ router.get('/my-payments', authenticateToken, requireRole(['STUDENT']), async (r
 // GET /api/payments/all - Admin fetches all payments
 router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Payment, User } = getModels();
     const payments = await Payment.findAll({
       include: [{ model: User, as: 'student', attributes: ['name', 'email'] }],
       order: [['createdAt', 'DESC']]
@@ -95,6 +100,7 @@ router.get('/all', authenticateToken, requireRole(['ADMIN']), async (req, res) =
 // POST /api/payments/approve/:id - Admin approves a payment
 router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Payment, User } = getModels();
     const { id } = req.params;
     const payment = await Payment.findByPk(id, {
       include: [{ model: User, as: 'student', attributes: ['name', 'email'] }]
@@ -147,6 +153,7 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
 // POST /api/payments/reject/:id - Admin rejects a payment
 router.post('/reject/:id', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   try {
+    const { Payment } = getModels();
     const { id } = req.params;
     const payment = await Payment.findByPk(id);
 

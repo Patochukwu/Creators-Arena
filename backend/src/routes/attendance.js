@@ -1,15 +1,18 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const modelsModule = require('../models');
-const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
-const { AttendanceSession, AttendanceRecord, User, Payment } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+const getModels = () => {
+  const modelsModule = require('../models');
+  return modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+};
+
 // POST /api/attendance/session - Tutor or Admin starts a session with a countdown timer
 router.post('/session', authenticateToken, requireRole(['TUTOR', 'ADMIN']), async (req, res) => {
   try {
+    const { AttendanceSession } = getModels();
     const { durationMinutes, courseName } = req.body;
 
     if (!durationMinutes || isNaN(durationMinutes) || durationMinutes <= 0) {
@@ -50,6 +53,7 @@ router.post('/session', authenticateToken, requireRole(['TUTOR', 'ADMIN']), asyn
 // GET /api/attendance/active - Retrieve current active attendance session
 router.get('/active', authenticateToken, async (req, res) => {
   try {
+    const { AttendanceSession, AttendanceRecord, User, Payment } = getModels();
     const now = new Date();
     const session = await AttendanceSession.findOne({
       where: {
@@ -108,6 +112,7 @@ router.get('/active', authenticateToken, async (req, res) => {
 // POST /api/attendance/mark - Student marks their attendance
 router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, res) => {
   try {
+    const { AttendanceSession, AttendanceRecord, Payment } = getModels();
     const { sessionId } = req.body;
 
     if (!sessionId) {
@@ -168,6 +173,7 @@ router.post('/mark', authenticateToken, requireRole(['STUDENT']), async (req, re
 // GET /api/attendance/history - Fetch student check-ins or live list for Tutors
 router.get('/history', authenticateToken, async (req, res) => {
   try {
+    const { AttendanceRecord, AttendanceSession, User } = getModels();
     if (req.user.role === 'STUDENT') {
       const records = await AttendanceRecord.findAll({
         where: { studentId: req.user.id },
