@@ -70,36 +70,26 @@ export default function StudentDashboard() {
 
   const fetchData = async () => {
     try {
-      // 1. Fetch fee
-      const feeRes = await fetch(`${API_URL}/settings/fee`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [feeRes, payRes, attRes, courseRes] = await Promise.all([
+        fetch(`${API_URL}/settings/fee`, { headers }),
+        fetch(`${API_URL}/payments/my-payments`, { headers }),
+        fetch(`${API_URL}/attendance/history`, { headers }),
+        fetch(`${API_URL}/courses`, { headers })
+      ]);
+
       if (feeRes.ok) {
         const feeData = await feeRes.json();
         setCurrentFee(feeData.monthlyFee);
       }
-
-      // 2. Fetch payments
-      const payRes = await fetch(`${API_URL}/payments/my-payments`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
       if (payRes.ok) {
         const payData = await payRes.json();
         setPayments(payData);
       }
-
-      // 3. Fetch attendance history
-      const attRes = await fetch(`${API_URL}/attendance/history`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
       if (attRes.ok) {
         const attData = await attRes.json();
         setAttendanceHistory(attData);
       }
-      // Fetch active courses list
-      const courseRes = await fetch(`${API_URL}/courses`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
       if (courseRes.ok) {
         const courseData = await courseRes.json();
         setCourses(courseData);
@@ -107,7 +97,6 @@ export default function StudentDashboard() {
           setSelectedCourse(courseData[0].name);
         }
       }
-
     } catch (error) {
       console.error('Error fetching student data:', error);
     }
