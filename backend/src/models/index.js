@@ -197,3 +197,12 @@ module.exports = {
   AttendanceRecord,
   Course
 };
+
+// Double-export directly on exports object to ensure static analysis and interop compatibility in bundlers
+exports.sequelize = sequelize;
+exports.User = User;
+exports.Payment = Payment;
+exports.Setting = Setting;
+exports.AttendanceSession = AttendanceSession;
+exports.AttendanceRecord = AttendanceRecord;
+exports.Course = Course;
