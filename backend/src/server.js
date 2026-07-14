@@ -39,72 +39,77 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('[DB] Connection to PostgreSQL established successfully.');
 
-    // Sync models (creates tables if they don't exist)
-    await sequelize.sync({ alter: true });
-    console.log('[DB] Database synchronized successfully.');
+    // Sync and seed only if NOT running in serverless Vercel environment
+    if (!process.env.VERCEL) {
+      // Sync models (creates tables if they don't exist)
+      await sequelize.sync({ alter: true });
+      console.log('[DB] Database synchronized successfully.');
 
-    // Seed default Admin User if it does not exist
-    const adminEmail = 'creatorstutorialinsight@gmail.com';
-    const adminExists = await User.findOne({ where: { email: adminEmail } });
-    if (!adminExists) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('adminpassword', salt);
-      await User.create({
-        name: 'Arena Admin',
-        email: adminEmail,
-        password: hashedPassword,
-        role: 'ADMIN'
-      });
-      console.log(`[Seed] Default Admin created: ${adminEmail} (password: adminpassword)`);
-    }
-
-    // Seed default Tutor User if it does not exist
-    const tutorEmail = 'tutor@arena.com';
-    const tutorExists = await User.findOne({ where: { email: tutorEmail } });
-    if (!tutorExists) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('tutorpassword', salt);
-      await User.create({
-        name: 'Dr. Tutor',
-        email: tutorEmail,
-        password: hashedPassword,
-        role: 'TUTOR'
-      });
-      console.log(`[Seed] Default Tutor created: ${tutorEmail} (password: tutorpassword)`);
-    }
-
-    // Seed default fee setting
-    const feeSetting = await Setting.findOne({ where: { key: 'monthly_fee' } });
-    if (!feeSetting) {
-      await Setting.create({ key: 'monthly_fee', value: '50.00' });
-      console.log('[Seed] Default subscription fee set to $50.00');
-    }
-
-    // Seed default courses
-    const defaultCourses = [
-      {
-        name: 'Video Editing & Content Creation',
-        price: 60.00,
-        description: 'Master video timeline editing, audio engineering, and digital content creation.'
-      },
-      {
-        name: 'Basic Frontend Development',
-        price: 50.00,
-        description: 'Build web applications using HTML, CSS, JavaScript layouts, and React components.'
-      },
-      {
-        name: 'Cloud Computing & Infrastructure',
-        price: 80.00,
-        description: 'Configure virtualizations, deploy container networks, and scale systems on AWS.'
+      // Seed default Admin User if it does not exist
+      const adminEmail = 'creatorstutorialinsight@gmail.com';
+      const adminExists = await User.findOne({ where: { email: adminEmail } });
+      if (!adminExists) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('adminpassword', salt);
+        await User.create({
+          name: 'Arena Admin',
+          email: adminEmail,
+          password: hashedPassword,
+          role: 'ADMIN'
+        });
+        console.log(`[Seed] Default Admin created: ${adminEmail} (password: adminpassword)`);
       }
-    ];
 
-    for (const c of defaultCourses) {
-      const exists = await Course.findOne({ where: { name: c.name } });
-      if (!exists) {
-        await Course.create(c);
-        console.log(`[Seed] Course initialized: ${c.name} (Price: $${c.price})`);
+      // Seed default Tutor User if it does not exist
+      const tutorEmail = 'tutor@arena.com';
+      const tutorExists = await User.findOne({ where: { email: tutorEmail } });
+      if (!tutorExists) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('tutorpassword', salt);
+        await User.create({
+          name: 'Dr. Tutor',
+          email: tutorEmail,
+          password: hashedPassword,
+          role: 'TUTOR'
+        });
+        console.log(`[Seed] Default Tutor created: ${tutorEmail} (password: tutorpassword)`);
       }
+
+      // Seed default fee setting
+      const feeSetting = await Setting.findOne({ where: { key: 'monthly_fee' } });
+      if (!feeSetting) {
+        await Setting.create({ key: 'monthly_fee', value: '50.00' });
+        console.log('[Seed] Default subscription fee set to $50.00');
+      }
+
+      // Seed default courses
+      const defaultCourses = [
+        {
+          name: 'Video Editing & Content Creation',
+          price: 60.00,
+          description: 'Master video timeline editing, audio engineering, and digital content creation.'
+        },
+        {
+          name: 'Basic Frontend Development',
+          price: 50.00,
+          description: 'Build web applications using HTML, CSS, JavaScript layouts, and React components.'
+        },
+        {
+          name: 'Cloud Computing & Infrastructure',
+          price: 80.00,
+          description: 'Configure virtualizations, deploy container networks, and scale systems on AWS.'
+        }
+      ];
+
+      for (const c of defaultCourses) {
+        const exists = await Course.findOne({ where: { name: c.name } });
+        if (!exists) {
+          await Course.create(c);
+          console.log(`[Seed] Course initialized: ${c.name} (Price: $${c.price})`);
+        }
+      }
+    } else {
+      console.log('[DB] Running on serverless platform - bypassing migrations and seeders.');
     }
 
     // Start listening
