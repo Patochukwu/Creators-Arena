@@ -2,7 +2,21 @@
   "services": {
     "frontend": {
       "root": "frontend",
-      "framework": "vite"
+      "framework": "vite",
+      "routes": [
+        {
+          "src": "/assets/(.*)",
+          "dest": "/assets/$1"
+        },
+        {
+          "src": "/(favicon.png|favicon.svg|icons.svg|slide1.png|slide2.png|slide3.png)",
+          "dest": "/$1"
+        },
+        {
+          "src": "/(.*)",
+          "dest": "/index.html"
+        }
+      ]
     },
     "backend": {
       "root": "backend",
@@ -17,22 +31,9 @@
       }
     },
     {
-      "source": "/assets/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
-    },
-    {
-      "source": "/(favicon.png|favicon.svg|icons.svg|slide1.png|slide2.png|slide3.png)",
-      "destination": {
-        "service": "frontend"
-      }
-    },
-    {
       "source": "/(.*)",
       "destination": {
-        "service": "frontend",
-        "path": "/index.html"
+        "service": "frontend"
       }
     }
   ]
