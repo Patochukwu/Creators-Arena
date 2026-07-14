@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: tutorial_db
-    restart: always
-    environment:
-      POSTGRES_DB: tutorial_arena
-      POSTGRES_USER: tutorial_user
-      POSTGRES_PASSWORD: tutorial_password
-    ports:
-      - "5435:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   backend:
     build:
       context: ./backend
@@ -24,17 +11,15 @@ services:
       - "5005:5000"
     environment:
       - PORT=5000
-      - DB_HOST=db
+      - DB_HOST=db.iwldbospzwkdltezahml.supabase.co
       - DB_PORT=5432
-      - DB_NAME=tutorial_arena
-      - DB_USER=tutorial_user
-      - DB_PASSWORD=tutorial_password
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=YOUR_SUPABASE_PASSWORD_HERE
       - JWT_SECRET=super_secret_jwt_key_123!
       - RESEND_API_KEY=re_RUmwx1Uq_Fj8skSyvA7pnMPvEqtsWyD6U
       - MAIL_FROM=Creators Tutorial Arena <onboarding@resend.dev>
       - FRONTEND_URL=http://localhost:5175
-    depends_on:
-      - db
 
   frontend:
     build:
@@ -47,6 +32,3 @@ services:
       - VITE_API_URL=http://localhost:5005/api
     depends_on:
       - backend
-
-volumes:
-  pgdata:
