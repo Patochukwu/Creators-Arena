@@ -70,7 +70,7 @@ export default function Home() {
           alt="Creators Tutorial Arena Logo" 
           style={{ width: '80px', height: '80px', marginBottom: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px 0 rgba(11, 150, 138, 0.25)' }} 
         />
-        <h2 className="gradient-text" style={{ fontSize: '3rem', marginBottom: '1rem', lineHeight: '1.2' }}>
+        <h2 className="gradient-text home-pitch-title">
           Creators Tutorial Arena
         </h2>
         <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: '800px', margin: '0 auto 2.5rem' }}>
