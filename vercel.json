@@ -12,11 +12,28 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": { "service": "backend" }
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    },
+    {
+      "source": "/(favicon.png|favicon.svg|icons.svg|slide1.png|slide2.png|slide3.png)",
+      "destination": {
+        "service": "frontend"
+      }
     },
     {
       "source": "/(.*)",
-      "destination": { "service": "frontend" }
+      "destination": {
+        "service": "frontend",
+        "path": "/index.html"
+      }
     }
   ]
 }
