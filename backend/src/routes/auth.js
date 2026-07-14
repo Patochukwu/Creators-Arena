@@ -55,8 +55,8 @@ router.post('/register', async (req, res) => {
       </div>
     `;
     
-    // We send email in background so registration completes fast
-    sendEmail({
+    // Await email dispatch so Vercel does not terminate before completion
+    await sendEmail({
       to: email,
       subject: emailSubject,
       html: emailHtml
@@ -176,7 +176,8 @@ router.post('/forgot-password', async (req, res) => {
       </div>
     `;
 
-    sendEmail({
+    // Await email dispatch so Vercel does not terminate before completion
+    await sendEmail({
       to: email,
       subject: emailSubject,
       html: emailHtml

@@ -1,8 +1,5 @@
 const { DataTypes } = require('sequelize');
-let sequelize = require('../config/db');
-if (sequelize.default) {
-  sequelize = sequelize.default;
-}
+const { sequelize } = require('../config/db');
 
 // User Model
 const User = sequelize.define('User', {

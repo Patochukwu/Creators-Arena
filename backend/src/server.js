@@ -3,10 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-let sequelize = require('./config/db');
-if (sequelize.default) {
-  sequelize = sequelize.default;
-}
+const { sequelize } = require('./config/db');
 const { User, Setting, Course } = require('./models');
 
 // Import routes

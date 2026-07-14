@@ -127,7 +127,8 @@ router.post('/approve/:id', authenticateToken, requireRole(['ADMIN']), async (re
       </div>
     `;
 
-    sendEmail({
+    // Await email dispatch so Vercel does not terminate before completion
+    await sendEmail({
       to: payment.student.email,
       subject: emailSubject,
       html: emailHtml
