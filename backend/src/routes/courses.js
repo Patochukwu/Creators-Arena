@@ -1,5 +1,7 @@
 const express = require('express');
-const { Course } = require('../models');
+const modelsModule = require('../models');
+const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+const { Course } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();

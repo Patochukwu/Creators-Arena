@@ -1,7 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const modelsModule = require('../models');
+const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+const { User } = models;
 const { JWT_SECRET, authenticateToken } = require('../middleware/auth');
 const { sendEmail } = require('../utils/mailer');
 

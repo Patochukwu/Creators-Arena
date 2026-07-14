@@ -1,5 +1,7 @@
 const express = require('express');
-const { Payment, User, Setting, Course } = require('../models');
+const modelsModule = require('../models');
+const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+const { Payment, User, Setting, Course } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { sendEmail } = require('../utils/mailer');
 

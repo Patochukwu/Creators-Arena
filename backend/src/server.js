@@ -7,7 +7,9 @@ if (dns.setDefaultResultOrder) {
 }
 require('dotenv').config();
 
-const { sequelize, User, Setting, Course } = require('./models');
+const modelsModule = require('./models');
+const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+const { sequelize, User, Setting, Course } = models;
 
 // Import routes
 const authRoutes = require('./routes/auth');

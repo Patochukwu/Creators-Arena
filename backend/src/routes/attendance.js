@@ -1,6 +1,8 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const { AttendanceSession, AttendanceRecord, User, Payment } = require('../models');
+const modelsModule = require('../models');
+const models = modelsModule.User ? modelsModule : (modelsModule.default || modelsModule);
+const { AttendanceSession, AttendanceRecord, User, Payment } = models;
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
